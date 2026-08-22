@@ -1,4 +1,4 @@
-﻿namespace tuan3.Pagination
+﻿namespace tuan3.Common.Pagination
 {
     public class PaginationQuery
     {

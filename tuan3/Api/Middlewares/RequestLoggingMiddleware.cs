@@ -1,7 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Net;
 
-namespace tuan3.Middlewares
+namespace tuan3.Api.Middlewares
 {
     public class RequestLoggingMiddleware
     {

@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using tuan3.models;
+using tuan3.Model;
 
-namespace tuan3.Data
+namespace tuan3.Context
 {
     public class AppDbContext : DbContext
     {

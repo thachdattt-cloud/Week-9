@@ -1,12 +1,17 @@
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Mvc;
-using System.Diagnostics;
-using tuan3.ApiResponse;
-using tuan3.Exceptions;
-using tuan3.Middlewares;
-using tuan3.Data;
 using Microsoft.EntityFrameworkCore;
+using System.Diagnostics;
+using tuan3.Api.Exceptions;
+using tuan3.Api.Middlewares;
+using tuan3.Api.Module;
+using tuan3.Common.ApiResponse;
+using tuan3.Context;
+using tuan3.Repository.Implementations;
+using tuan3.Repository.Interfaces;
+using tuan3.Services.Implementations;
+using tuan3.Services.Interfaces;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -26,7 +31,7 @@ builder.Services.AddCors(
     );
 builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddValidatorsFromAssemblyContaining<Program>();
-
+builder.Services.AddStudentModule();
 builder.Services.Configure<ApiBehaviorOptions>(options =>
 {
     options.InvalidModelStateResponseFactory = context =>

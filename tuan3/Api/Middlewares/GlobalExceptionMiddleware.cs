@@ -1,7 +1,7 @@
 ﻿using System.Net;
-using tuan3.Exceptions;
-using tuan3.ApiResponse;
-namespace tuan3.Middlewares
+using tuan3.Api.Exceptions;
+using tuan3.Common.ApiResponse;
+namespace tuan3.Api.Middlewares
    
 {
     public class GlobalExceptionMiddleware 

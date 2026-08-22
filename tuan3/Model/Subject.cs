@@ -2,7 +2,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace tuan3.models
+namespace tuan3.Model
 {
     [Table("Subjects")]
     public class Subject

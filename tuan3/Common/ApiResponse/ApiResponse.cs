@@ -1,4 +1,4 @@
-﻿namespace tuan3.ApiResponse
+﻿namespace tuan3.Common.ApiResponse
 {
     public class ApiResponse<T>
     {

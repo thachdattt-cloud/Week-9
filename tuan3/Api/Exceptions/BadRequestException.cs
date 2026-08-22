@@ -1,4 +1,4 @@
-﻿namespace tuan3.Exceptions
+﻿namespace tuan3.Api.Exceptions
 {
     public class BadRequestException : Exception
     {

@@ -1,7 +1,7 @@
 ﻿// tuan3/models/StudentGrade.cs
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace tuan3.models
+namespace tuan3.Model
 {
     [Table("StudentGrades")]
     public class StudentGrade
