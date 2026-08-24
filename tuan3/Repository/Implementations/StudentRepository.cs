@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
 using tuan3.Context;
 using tuan3.DTO;
 using tuan3.Model;
@@ -17,8 +18,9 @@ namespace tuan3.Repository.Implementations
 
         // Projection dat truc tiep trong query -> EF Core dich thanh SQL
         // chi lay dung cot can dung, khong keo full entity ve RAM.
-        private static readonly System.Linq.Expressions.Expression<Func<Student, StudentResponseDto>> ToResponseDto =
-            s => new StudentResponseDto
+        private Expression<Func<Student, StudentResponseDto>> ToResponseDto()
+        {
+            return s => new StudentResponseDto
             {
                 Id = s.StudentID,
                 Name = s.FullName,
@@ -28,6 +30,7 @@ namespace tuan3.Repository.Implementations
                 ClassID = s.ClassID,
                 Age = s.BirthDate.HasValue ? DateTime.Today.Year - s.BirthDate.Value.Year : 0
             };
+        }
 
         public async Task<List<StudentResponseDto>> GetAllAsync(string? keyword)
         {
@@ -40,7 +43,7 @@ namespace tuan3.Repository.Implementations
 
             return await query
                 .OrderBy(s => s.StudentID)
-                .Select(ToResponseDto)
+                .Select(ToResponseDto())
                 .ToListAsync();
         }
 
@@ -90,7 +93,7 @@ namespace tuan3.Repository.Implementations
                 .OrderBy(s => s.StudentID)
                 .Skip(skipCount)
                 .Take(pageSize)
-                .Select(ToResponseDto)
+                .Select(ToResponseDto())
                 .ToListAsync();
         }
 

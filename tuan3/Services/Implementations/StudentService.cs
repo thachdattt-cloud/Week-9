@@ -17,9 +17,7 @@ namespace tuan3.Services.Implementations
             _repository = repository;
         }
 
-        // Chi con dung cho GetByIdAsync (tra ve tu entity that,
-        // vi endpoint GetById co the tai su dung entity cho cac
-        // muc dich khac ngoai hien thi don thuan).
+      
         private StudentResponseDto MapToDto(Student student)
         {
             int age = 0;
