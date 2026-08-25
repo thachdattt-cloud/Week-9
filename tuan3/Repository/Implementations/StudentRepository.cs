@@ -16,8 +16,7 @@ namespace tuan3.Repository.Implementations
             _context = context;
         }
 
-        // Projection dat truc tiep trong query -> EF Core dich thanh SQL
-        // chi lay dung cot can dung, khong keo full entity ve RAM.
+  
         private Expression<Func<Student, StudentResponseDto>> ToResponseDto()
         {
             return s => new StudentResponseDto
@@ -31,7 +30,7 @@ namespace tuan3.Repository.Implementations
                 Age = s.BirthDate.HasValue ? DateTime.Today.Year - s.BirthDate.Value.Year : 0
             };
         }
-
+         
         public async Task<List<StudentResponseDto>> GetAllAsync(string? keyword)
         {
             var query = _context.Students.AsNoTracking().AsQueryable();
@@ -99,7 +98,7 @@ namespace tuan3.Repository.Implementations
 
         public async Task<List<StudentWithClassDto>> GetAllWithClassAsync()
         {
-            return await _context.Students
+            return await _context.Students 
                 .AsNoTracking()
                 .Select(s => new StudentWithClassDto
                 {
@@ -113,26 +112,17 @@ namespace tuan3.Repository.Implementations
 
         public async Task<List<GradeDetailDto>> GetGradesDetailAsync()
         {
-            var grades = await _context.StudentGrades
+            return await _context.StudentGrades
                 .AsNoTracking()
-                .Include(g => g.Student)
-                    .ThenInclude(s => s.Class)
-                .Include(g => g.Subject)
+                .Select(g => new GradeDetailDto
+                {
+                    StudentCode = g.Student.StudentCode,
+                    StudentFullName = g.Student.FullName,
+                    ClassName = g.Student.Class.ClassName,
+                    SubjectName = g.Subject.SubjectName,
+                    Mark = g.Mark
+                })
                 .ToListAsync();
-
-            var result = new List<GradeDetailDto>();
-            foreach (var g in grades)
-            {
-                var dto = new GradeDetailDto();
-                dto.StudentCode = g.Student.StudentCode;
-                dto.StudentFullName = g.Student.FullName;
-                dto.ClassName = g.Student.Class.ClassName;
-                dto.SubjectName = g.Subject.SubjectName;
-                dto.Mark = g.Mark;
-                result.Add(dto);
-            }
-
-            return result;
         }
     }
 }
