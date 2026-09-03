@@ -1,3 +1,7 @@
 <Solution>
-  <Project Path="tuan3/tuan3.csproj" />
+  <Project Path="StudentManagement.Application/StudentManagement.Application.csproj" Id="bd05205e-ba5d-4186-951d-ff3c4268be1b" />
+  <Project Path="StudentManagement.Domain/StudentManagement.Domain.csproj" Id="9e78cbed-c4b9-451a-bd74-84b49f83319d" />
+  <Project Path="StudentManagement.Infrastructure/StudentManagement.Infrastructure.csproj" Id="24fa9c1c-3ae8-4665-aa7b-4da7438b0dd2" />
+  <Project Path="StudentManagement.Shared/StudentManagement.Shared.csproj" Id="a8a8dd1f-8e9f-47e3-8856-022c9c51308c" />
+  <Project Path="tuan3/StudentManagement.API.csproj" />
 </Solution>

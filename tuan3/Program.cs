@@ -3,15 +3,13 @@ using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Diagnostics;
-using tuan3.Api.Exceptions;
-using tuan3.Api.Middlewares;
-using tuan3.Api.Module;
-using tuan3.Common.ApiResponse;
-using tuan3.Context;
-using tuan3.Repository.Implementations;
-using tuan3.Repository.Interfaces;
-using tuan3.Services.Implementations;
-using tuan3.Services.Interfaces;
+using StudentManagement.Infrastructure.Context;
+using StudentManagement.Shared.Common.ApiResponse;
+using StudentManagement.API.Api.Middlewares;
+using StudentManagement.Application.Api.Module;
+using StudentManagement.Application.Api.Middlewares;
+using MediatR;
+using StudentManagement.Application.Features.Students.Queries.GetStudents;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -29,9 +27,10 @@ builder.Services.AddCors(
         });
     }
     );
-builder.Services.AddFluentValidationAutoValidation();
-builder.Services.AddValidatorsFromAssemblyContaining<Program>();
+
 builder.Services.AddStudentModule();
+builder.Services.AddMediatR(cfg =>
+    cfg.RegisterServicesFromAssembly(typeof(GetStudentsQuery).Assembly));
 builder.Services.Configure<ApiBehaviorOptions>(options =>
 {
     options.InvalidModelStateResponseFactory = context =>

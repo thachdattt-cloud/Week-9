@@ -1,7 +1,9 @@
 ﻿using System.Net;
-using tuan3.Api.Exceptions;
-using tuan3.Common.ApiResponse;
-namespace tuan3.Api.Middlewares
+using StudentManagement.Domain.Exceptions;
+using StudentManagement.Shared.Common.ApiResponse;
+using FluentValidation;
+namespace StudentManagement.Application.Api.Middlewares
+
    
 {
     public class GlobalExceptionMiddleware 
@@ -36,7 +38,8 @@ namespace tuan3.Api.Middlewares
             int statusCode = ex switch { 
             NotFoundException => (int) HttpStatusCode.NotFound,
             BadRequestException => (int) HttpStatusCode.BadRequest,
-            _ => (int) HttpStatusCode.InternalServerError
+                ValidationException => (int)HttpStatusCode.BadRequest,
+                _ => (int) HttpStatusCode.InternalServerError
             
             };
             context.Response.StatusCode= statusCode;
@@ -44,6 +47,8 @@ namespace tuan3.Api.Middlewares
             var message = ex switch {
                 NotFoundException => ex.Message,
                 BadRequestException => ex.Message,
+                ValidationException valEx =>                              
+                    string.Join(" | ", valEx.Errors.Select(e => e.ErrorMessage)),
                 _ => " da xay ra loi he thong vui long thu lai sau"
 
 

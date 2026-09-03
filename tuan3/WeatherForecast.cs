@@ -1,4 +1,4 @@
-namespace tuan3
+namespace StudentManagement.Application
 {
     public class WeatherForecast
     {
