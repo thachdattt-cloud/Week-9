@@ -16,6 +16,6 @@ namespace StudentManagement.Domain.Model
 
         public int? Credits { get; set; }
 
-        public ICollection<StudentGrade> StudentGrades { get; set; } = new List<StudentGrade>();
+        public ICollection<StudentGrade> StudentGrades { get; set; } = new List<StudentGrade>(); 
     }
 }

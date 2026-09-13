@@ -12,7 +12,8 @@ namespace StudentManagement.Infrastructure.Context
         public DbSet<Class> Classes { get; set; }
         public DbSet<Subject> Subjects { get; set; }
         public DbSet<StudentGrade> StudentGrades { get; set; }
-
+        public DbSet<User> Users { get; set; }
+        public DbSet<RefreshToken> RefreshTokens { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             modelBuilder.Entity<StudentGrade>()
@@ -73,6 +74,24 @@ namespace StudentManagement.Infrastructure.Context
                 new StudentGrade { StudentID = 2, SubjectID = 4, Mark = 9.00m, ExamDate = new DateTime(2026, 8, 7) },
                 new StudentGrade { StudentID = 2, SubjectID = 5, Mark = 6.50m, ExamDate = new DateTime(2026, 8, 7) },
                 new StudentGrade { StudentID = 3, SubjectID = 5, Mark = 5.50m, ExamDate = new DateTime(2026, 8, 7) }
+            );
+
+            // ===== Seed data: Users =====
+            modelBuilder.Entity<User>().HasData(
+                new User
+                {
+                    UserID = 1,
+                    Username = "admin",
+                    PasswordHash = "$2b$12$1zqtDKI/WEyO73wey.tBV.E5ECxzfV9l33OTzQh0yTUpSpuiG8JlO",
+                    Role = "Admin"
+                },
+                   new User
+                   {
+                       UserID = 2,
+                       Username = "user1",
+                       PasswordHash = "$2b$12$R6mJlxpNR47LkOvakSVyFOTXFMFDXMgPJGyfWxYeCqHRj7m6UJNaq", 
+                       Role = "User"
+                   }
             );
         }
     }

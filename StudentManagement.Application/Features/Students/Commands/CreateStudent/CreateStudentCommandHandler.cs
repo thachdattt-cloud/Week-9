@@ -1,29 +1,23 @@
-﻿using MediatR;
+﻿using AutoMapper;
+using MediatR;
+using StudentManagement.Application.Features.Students.Commands.CreateStudent;
 using StudentManagement.Application.Interfaces.Repositories;
 using StudentManagement.Domain.Model;
-
-namespace StudentManagement.Application.Features.Students.Commands.CreateStudent;
 
 public class CreateStudentCommandHandler : IRequestHandler<CreateStudentCommand, int>
 {
     private readonly IStudentRepository _studentRepository;
+    private readonly IMapper _mapper;
 
-    public CreateStudentCommandHandler(IStudentRepository studentRepository)
+    public CreateStudentCommandHandler(IStudentRepository studentRepository, IMapper mapper)
     {
         _studentRepository = studentRepository;
+        _mapper = mapper;
     }
 
     public async Task<int> Handle(CreateStudentCommand request, CancellationToken cancellationToken)
     {
-        var student = new Student
-        {
-            StudentCode = request.StudentCode,
-            FullName = request.FullName,
-            Gender = request.Gender,
-            BirthDate = request.BirthDate,
-            Email = request.Email,
-            ClassID = request.ClassID
-        };
+        var student = _mapper.Map<Student>(request);
 
         await _studentRepository.AddAsync(student);
         await _studentRepository.SaveChangesAsync();

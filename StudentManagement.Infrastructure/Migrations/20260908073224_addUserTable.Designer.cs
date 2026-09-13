@@ -3,17 +3,20 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using StudentManagement.Infrastructure.Context;
 
 #nullable disable
 
-namespace StudentManagement.Application.Migrations
+namespace StudentManagement.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260908073224_addUserTable")]
+    partial class addUserTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -79,34 +82,6 @@ namespace StudentManagement.Application.Migrations
                             ClassCode = "cntt06",
                             ClassName = "công nghệ thông tin 6"
                         });
-                });
-
-            modelBuilder.Entity("StudentManagement.Domain.Model.RefreshToken", b =>
-                {
-                    b.Property<int>("RefreshTokenID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("RefreshTokenID"));
-
-                    b.Property<DateTime>("ExpiryDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<bool>("IsRevoked")
-                        .HasColumnType("bit");
-
-                    b.Property<string>("Token")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("UserID")
-                        .HasColumnType("int");
-
-                    b.HasKey("RefreshTokenID");
-
-                    b.HasIndex("UserID");
-
-                    b.ToTable("RefreshTokens");
                 });
 
             modelBuilder.Entity("StudentManagement.Domain.Model.Student", b =>
@@ -357,25 +332,7 @@ namespace StudentManagement.Application.Migrations
                             PasswordHash = "$2b$12$1zqtDKI/WEyO73wey.tBV.E5ECxzfV9l33OTzQh0yTUpSpuiG8JlO",
                             Role = "Admin",
                             Username = "admin"
-                        },
-                        new
-                        {
-                            UserID = 2,
-                            PasswordHash = "$2b$12$R6mJlxpNR47LkOvakSVyFOTXFMFDXMgPJGyfWxYeCqHRj7m6UJNaq",
-                            Role = "User",
-                            Username = "user1"
                         });
-                });
-
-            modelBuilder.Entity("StudentManagement.Domain.Model.RefreshToken", b =>
-                {
-                    b.HasOne("StudentManagement.Domain.Model.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserID")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("StudentManagement.Domain.Model.Student", b =>

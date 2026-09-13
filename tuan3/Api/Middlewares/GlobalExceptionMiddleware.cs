@@ -39,6 +39,7 @@ namespace StudentManagement.Application.Api.Middlewares
             NotFoundException => (int) HttpStatusCode.NotFound,
             BadRequestException => (int) HttpStatusCode.BadRequest,
                 ValidationException => (int)HttpStatusCode.BadRequest,
+                UnauthorizedException => (int)HttpStatusCode.Unauthorized,
                 _ => (int) HttpStatusCode.InternalServerError
             
             };
@@ -49,6 +50,7 @@ namespace StudentManagement.Application.Api.Middlewares
                 BadRequestException => ex.Message,
                 ValidationException valEx =>                              
                     string.Join(" | ", valEx.Errors.Select(e => e.ErrorMessage)),
+                UnauthorizedException => ex.Message,  
                 _ => " da xay ra loi he thong vui long thu lai sau"
 
 

@@ -3,17 +3,20 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using StudentManagement.Infrastructure.Context;
 
 #nullable disable
 
-namespace StudentManagement.Application.Migrations
+namespace StudentManagement.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260911062617_AddRefreshTokenTable")]
+    partial class AddRefreshTokenTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -357,13 +360,6 @@ namespace StudentManagement.Application.Migrations
                             PasswordHash = "$2b$12$1zqtDKI/WEyO73wey.tBV.E5ECxzfV9l33OTzQh0yTUpSpuiG8JlO",
                             Role = "Admin",
                             Username = "admin"
-                        },
-                        new
-                        {
-                            UserID = 2,
-                            PasswordHash = "$2b$12$R6mJlxpNR47LkOvakSVyFOTXFMFDXMgPJGyfWxYeCqHRj7m6UJNaq",
-                            Role = "User",
-                            Username = "user1"
                         });
                 });
 

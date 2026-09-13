@@ -1,21 +1,23 @@
 ﻿using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using StudentManagement.Application.DTO;
 using StudentManagement.Application.Features.Students.Commands.CreateStudent;
 using StudentManagement.Application.Features.Students.Commands.DeleteStudent;
 using StudentManagement.Application.Features.Students.Commands.UpdateStudent;
 using StudentManagement.Application.Features.Students.Queries.GetAllStudents;
+using StudentManagement.Application.Features.Students.Queries.GetAllStudentsWithClass;
+using StudentManagement.Application.Features.Students.Queries.GetGradesDetail;
 using StudentManagement.Application.Features.Students.Queries.GetStudentById;
 using StudentManagement.Application.Features.Students.Queries.GetStudents;
 using StudentManagement.Application.Features.Students.Queries.GetStudentsPagingDapper;
 using StudentManagement.Shared.Common.ApiResponse;
 using StudentManagement.Shared.Common.Pagination;
-using StudentManagement.Application.Features.Students.Queries.GetAllStudentsWithClass;
-using StudentManagement.Application.Features.Students.Queries.GetGradesDetail;
 
 namespace StudentManagement.Application.Api.Controllers
 {
     [ApiController]
+    [Authorize]
     [Route("api/students")]
     public class StudentController : ControllerBase
     {
@@ -48,6 +50,7 @@ namespace StudentManagement.Application.Api.Controllers
         }
 
         [HttpPost]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<ApiResponse<int>>> Create([FromBody] CreateStudentCommand command)
         {
             var newId = await _mediator.Send(command);
@@ -60,6 +63,7 @@ namespace StudentManagement.Application.Api.Controllers
         /////
         
         [HttpPut("{id}")]
+        [Authorize(Roles = "Admin")]
         public async Task<ActionResult<ApiResponse<StudentResponseDto>>> Update([FromRoute] int id, [FromBody] UpdateStudentDto dto)
         {
             var command = new UpdateStudentCommand
@@ -76,6 +80,9 @@ namespace StudentManagement.Application.Api.Controllers
         }
 
         [HttpDelete("{id}")]
+     
+       
+        [Authorize(Policy = "CanManageStudents")]
         public async Task<ActionResult<ApiResponse<string>>> Delete([FromRoute] int id)
         {
             await _mediator.Send(new DeleteStudentCommand { StudentID = id });
