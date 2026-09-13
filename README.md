@@ -1,157 +1,211 @@
-# Tuần 7 - Layer Architecture
+# Auth Module — StudentManagement API (Tuần 9)
 
-Mục tiêu tuần: Refactor API theo kiến trúc phân lớp — Controller/AutoMapper/Exception/Middlewares/Module/Resources (Api) / Common / Context / Model / Repository / Services — hiểu Dependency Injection và trách nhiệm từng layer.
-Sản phẩm chính của tuần: Student API version Layer Architecture.
-
----
-
-## Ngày 1: Layer Architecture overview
-
-**Deliverable:** Thư mục rõ ràng
-**Đánh giá:** Review kiến trúc
-
-### Nội dung học
-- **Layer Architecture:** tổ chức code thành các tầng riêng biệt, mỗi tầng 1 trách nhiệm rõ ràng, tầng trên chỉ gọi xuống tầng liền kề bên dưới:
-  - **Controller** — nhận request HTTP, gọi Service, trả response. Không chứa business logic, không query DB trực tiếp.
-  - **Service** — chứa business logic, gọi Repository, không biết chi tiết DB hoạt động ra sao.
-  - **Repository** — chỉ thao tác dữ liệu qua `AppDbContext`, không chứa business logic.
-- **Vì sao cần tách lớp:** Controller làm tất cả (nhận request, validate, query DB, xử lý logic) vi phạm Single Responsibility Principle — khó test business logic mà không dựng cả HTTP request, khó tái sử dụng logic ở nơi khác.
-
-### Việc đã làm
-- Refactor cấu trúc thư mục: `Data/` → `Context/`, `models/` → `Model/`, tạo mới `Api/` (chứa `Controllers/`, `Exceptions/`, `Middlewares/`, `Module/`, `AutoMapper/`), `Common/` (gộp `ApiResponse/`, `Pagination/`), `Repository/` và `Services/` (mỗi thư mục có `Interfaces/` và `Implementations/` riêng biệt).
-- Đổi namespace tương ứng cho từng nhóm file đã di chuyển, build lại sau mỗi bước nhỏ để dễ xác định lỗi — tránh di chuyển hàng loạt rồi mới build 1 lần.
-- Xác nhận build sạch, chạy lại project, test qua Swagger — hành vi API không đổi so với trước khi tách thư mục.
-
-### File/thư mục thay đổi chính
-```
-tuan3/
-├── Api/
-│   ├── Controllers/
-│   ├── Exceptions/
-│   ├── Middlewares/
-│   ├── Module/
-│   └── AutoMapper/
-├── Common/
-│   ├── ApiResponse.cs
-│   └── Pagination/
-├── Context/
-│   └── AppDbContext.cs
-├── Model/
-│   ├── Student.cs, Class.cs, Subject.cs, StudentGrade.cs
-├── Repository/
-│   ├── Interfaces/
-│   └── Implementations/
-├── Services/
-│   ├── Interfaces/
-│   └── Implementations/
-├── DTO/
-├── Validators/
-└── Migrations/
-```
+Module xác thực & phân quyền cho project `StudentManagement` (Clean Architecture, .NET 8), xây dựng trên nền CQRS/MediatR đã có từ Tuần 8. Module gồm: đăng nhập bằng JWT, refresh token có rotation, và authorization theo Role/Policy.
 
 ---
 
-## Ngày 2: Service layer
+## 1. Tổng quan kiến trúc
 
-**Deliverable:** StudentService
-**Đánh giá:** Code review
-
-### Nội dung học
-- **Service layer:** tầng trung gian giữa Controller và Repository, chứa business logic (tính `Age` từ `BirthDate`, validate `dto.Name` không rỗng, ném `NotFoundException`...).
-- Service **không biết gì về HTTP** — không dùng `ActionResult`, không có `[HttpGet]` — vì nếu Service trả `ActionResult`, sẽ không tái sử dụng được cho môi trường không phải Web API (Console app, background job), khó test, và trộn lẫn trách nhiệm (quyết định HTTP status code là việc của Controller).
-- **Controller không được query DB trực tiếp nữa** — mọi thao tác dữ liệu đi qua `IStudentService`.
-
-### Việc đã làm
-- Tạo `IStudentService` định nghĩa đủ phương thức khớp với các action của `StudentController` (`GetAllAsync`, `GetByIdAsync`, `CreateAsync`, `UpdateAsync`, `DeleteAsync`, `GetPageAsync`, `GetAllWithClassAsync`, `GetGradesDetailAsync`).
-- Tạo `StudentService` implement interface trên, chuyển toàn bộ business logic (mapping DTO, tính tuổi, validate, throw exception) từ `StudentController` cũ sang.
-- Refactor `StudentController`: inject `IStudentService` thay vì `AppDbContext`, mỗi action chỉ còn gọi Service và đóng gói `ApiResponse`.
-
----
-
-## Ngày 3: Repository layer
-
-**Deliverable:** StudentRepository
-**Đánh giá:** Review dependency
-
-### Nội dung học
-- **Repository layer:** tầng duy nhất "chạm" trực tiếp vào `AppDbContext`, chỉ thao tác dữ liệu (query, insert, save), không chứa business logic.
-- **Interface tách biệt implementation** (`Repository/Interfaces/`, `Repository/Implementations/`) — Service chỉ phụ thuộc `IStudentRepository`, không biết class `StudentRepository` cụ thể. Lợi ích: nếu sau này cần đổi implementation (ví dụ thêm cache), chỉ cần sửa 1 dòng đăng ký DI, không đụng tới Service/Controller.
-- Repository nên trả về **entity thuần túy** cho các thao tác cần tracking (`GetByIdAsync` dùng cho `Update`/`Delete`); nhưng với các thao tác chỉ đọc (đặc biệt có JOIN quan hệ), Repository có thể trả thẳng DTO qua projection để giữ lợi ích hiệu năng đã học ở Tuần 6 — đây là đánh đổi có chủ đích giữa tính thuần túy của layering và hiệu năng.
-
-### Việc đã làm
-- Tạo `IStudentRepository`/`StudentRepository`, ban đầu tách theo hướng "thuần túy" (mọi phương thức đọc trả `List<Student>`, Service tự map sang DTO).
-- Qua vấn đáp, phát hiện điểm không nhất quán: `GetAllAsync` trả entity + map ở Service (kém tối ưu), trong khi `GetAllWithClassAsync` trả thẳng DTO qua projection (tối ưu) — cùng là thao tác đọc nhưng xử lý khác nhau không có lý do rõ ràng.
-- Refactor lại cho nhất quán: `GetAllAsync`, `GetPageAsync` đổi sang trả `List<StudentResponseDto>` qua projection (dùng chung 1 biểu thức `Expression<Func<Student, StudentResponseDto>>` để tránh lặp code map); chỉ giữ entity thật ở `GetByIdAsync` (phục vụ `Update`/`Delete`, cần entity để EF Core tracking).
-- `StudentService` cập nhật lại tương ứng — `GetAllAsync`/`GetPageAsync` giờ chỉ gọi thẳng Repository và trả kết quả, không tự map nữa.
-
----
-
-## Ngày 4: Dependency Injection
-
-**Deliverable:** DI configuration
-**Đánh giá:** Mentor kiểm tra app chạy không lỗi startup
-
-### Nội dung học
-- **Dependency Injection (DI):** "tiêm" phụ thuộc vào class từ bên ngoài qua constructor, thay vì class tự `new` ra phụ thuộc của mình — giúp tách rời (decoupling), dễ test (mock được), quản lý vòng đời tập trung.
-- **3 lifetime:** Transient (mỗi lần inject tạo instance mới), Scoped (1 instance dùng chung suốt 1 HTTP request), Singleton (1 instance duy nhất cho toàn ứng dụng).
-- **`AppDbContext` luôn là Scoped** — vì đại diện 1 phiên làm việc với DB, không nên dùng chung giữa các request (rủi ro race condition khi nhiều request chạy song song), cũng không nên Singleton (dữ liệu request này lẫn với request khác). Vì `StudentRepository`/`StudentService` phụ thuộc `AppDbContext` (Scoped), nên cũng phải đăng ký Scoped — tránh lỗi **Captive Dependency** (service sống lâu hơn giữ tham chiếu tới service sống ngắn hơn).
-
-### Việc đã làm
-- Đăng ký trong `Program.cs`:
-  ```csharp
-  builder.Services.AddScoped<IStudentRepository, StudentRepository>();
-  builder.Services.AddScoped<IStudentService, StudentService>();
-  ```
-- Build và chạy lại project — xác nhận không còn lỗi `Unable to resolve service`.
-- Test toàn bộ endpoint qua Swagger, xác nhận hoạt động đúng sau khi hoàn tất chuỗi DI.
-
----
-
-## Ngày 5: Checkpoint tuần 7
-
-
-
-### Nội dung học
-- Tổng hợp lại toàn bộ chuỗi Controller → Service → Repository → AppDbContext, đảm bảo hành vi API không đổi so với Tuần 6, chỉ cấu trúc code thay đổi.
-- Tự đánh giá code style: naming convention, tránh toán tử 3 ngôi ngoại trừ trường hợp bắt buộc kỹ thuật (bên trong `Select()` LINQ), dọn code chết, tính nhất quán giữa các phương thức đọc/ghi.
-
-### Việc đã làm
-- Rà soát build sạch, test lại toàn bộ endpoint (`GetAll`, `GetById`, `Create`, `Update`, `Delete`, `GetPage`, `with-class`, `include-demo`, `grades-detail`).
-- Xác nhận `StudentController` không còn tham chiếu `AppDbContext`, không còn `MapToDto` (đã chuyển hết vào Service).
-- Ghi chú các "ngoại lệ có chủ đích" trong kiến trúc: `GetAllWithClassAsync`/`GetGradesDetailAsync` trả thẳng DTO từ Repository (phá lệ layering thuần túy) vì lý do hiệu năng — quyết định có cân nhắc, không phải sai sót.
-
---
-
-## Sơ đồ luồng request (sau khi hoàn thành Tuần 7)
+Module tuân thủ đúng 5 project hiện có, không tạo project mới:
 
 ```
-1. HTTP Request → StudentController.GetAll()
-2. Controller gọi → IStudentService.GetAllAsync()
-3. Service gọi → IStudentRepository.GetAllAsync()
-4. Repository dùng → AppDbContext để query SQL Server (qua DTO projection)
-5. Repository trả về → List<StudentResponseDto> cho Service
-6. Service trả về → Controller
-7. Controller đóng gói → ApiResponse<...> → trả về HTTP Response
+StudentManagement.Domain          → Entity (User, RefreshToken), Exception (UnauthorizedException)
+StudentManagement.Application     → Interface (IPasswordHasher, IJwtTokenGenerator,
+                                     IUserRepository, IRefreshTokenRepository),
+                                     Feature (Login, RefreshToken, RevokeToken theo CQRS/MediatR), DTO
+StudentManagement.Infrastructure  → Implementation (BCryptPasswordHasher, JwtTokenGenerator,
+                                     UserRepository, RefreshTokenRepository), migrations
+StudentManagement.API             → AuthController, cấu hình JWT Bearer + Swagger + Policy trong Program.cs
+StudentManagement.Shared          → (không đổi — vẫn dùng ApiResponse<T> chung)
 ```
 
-Mỗi tầng chỉ biết tầng liền kề bên dưới: Controller không biết `AppDbContext` tồn tại; Repository không biết `ApiResponse` là gì.
+Nguyên tắc xuyên suốt: **Application không biết công nghệ cụ thể** (không biết BCrypt hay JWT library là gì) — chỉ định nghĩa interface. **Infrastructure** mới là nơi cài package và viết code thật, implement lại interface đó (Dependency Inversion, đồng nhất với cách `IStudentRepository` đã làm ở Tuần 8).
 
-## So sánh cách tiếp cận Repository: thuần túy vs projection
+---
 
-| | Trả entity thuần túy | Trả DTO qua projection |
+## 2. Cấu trúc file mới thêm ở Tuần 9
+
+| Layer | File | Vai trò |
 |---|---|---|
-| Khi nào dùng | Thao tác ghi (`Create`, `Update`, `Delete`) — cần entity để EF Core tracking | Thao tác đọc (`GetAll`, `GetPage`, endpoint quan hệ) — chỉ cần hiển thị dữ liệu |
-| Hiệu năng | Kéo toàn bộ cột entity về RAM | SQL Server chỉ SELECT đúng cột cần dùng |
-| Layering thuần túy | Đúng chuẩn (Repository không biết DTO) | Ngoại lệ có chủ đích, đánh đổi lấy hiệu năng |
+| Domain | `Model/User.cs` | Entity user: `UserID`, `Username`, `PasswordHash`, `Role` |
+| Domain | `Model/RefreshToken.cs` | Entity refresh token: `RefreshTokenID`, `Token`, `UserID` (FK), `ExpiryDate`, `IsRevoked` |
+| Domain | `Exceptions/UnauthorizedException.cs` | Ném khi xác thực/refresh/logout thất bại → middleware map sang 401 |
+| Application | `Interfaces/IPasswordHasher.cs` | Hợp đồng hash/verify password |
+| Application | `Interfaces/IJwtTokenGenerator.cs` | Hợp đồng sinh Access Token (JWT) và Refresh Token (chuỗi ngẫu nhiên) |
+| Application | `Interfaces/Repositories/IUserRepository.cs` | Tìm `User` theo username |
+| Application | `Interfaces/Repositories/IRefreshTokenRepository.cs` | CRUD cơ bản cho `RefreshToken` |
+| Application | `Features/Auth/Commands/Login/*` | `LoginCommand`, `LoginCommandHandler` |
+| Application | `Features/Auth/Commands/RefreshToken/*` | `RefreshTokenCommand`, `RefreshTokenCommandHandler` |
+| Application | `Features/Auth/Commands/RevokeToken/*` | `RevokeTokenCommand`, `RevokeTokenCommandHandler` |
+| Application | `DTO/LoginResultDto.cs` | `AccessToken`, `RefreshToken`, `Username`, `Role` |
+| Application | `Mappings/StudentProfile.cs` | (Tuần 9 Ngày 1) AutoMapper: Command↔Entity, Entity→ResponseDto |
+| Infrastructure | `Services/BCryptPasswordHasher.cs` | Implement `IPasswordHasher` bằng `BCrypt.Net-Next` |
+| Infrastructure | `Services/JwtTokenGenerator.cs` | Implement `IJwtTokenGenerator` bằng `System.IdentityModel.Tokens.Jwt` |
+| Infrastructure | `Repository/Implementations/UserRepository.cs` | Implement `IUserRepository` |
+| Infrastructure | `Repository/Implementations/RefreshTokenRepository.cs` | Implement `IRefreshTokenRepository` |
+| Infrastructure | `Context/AppDbContext.cs` | Thêm `DbSet<User>`, `DbSet<RefreshToken>`, seed 2 user test |
+| Api | `Controllers/AuthController.cs` | `login`, `refresh-token`, `logout`, `me` |
+| Api | `Program.cs` | `AddAuthentication().AddJwtBearer(...)`, `AddAuthorization` (Policy `CanManageStudents`), Swagger Security Scheme |
+| Api | `appsettings.json` | Section `JwtSettings` |
+| Api | `Module/ServiceRegistrationModule.cs` | Đăng ký DI cho toàn bộ interface/implementation ở trên |
 
-## Cách test toàn bộ tuần
-1. Đảm bảo database `StudentManagement` đã migrate đầy đủ (kế thừa từ Tuần 6).
-2. Chạy project (`dotnet run` hoặc F5), xác nhận không lỗi startup DI.
-3. Test qua Swagger hoặc file `.http`:
-   - `GET /api/students`
-   - `GET /api/students/{id}`
-   - `GET /api/students/Page`
-   - `GET /api/students/with-class`
-   - `GET /api/students/grades-detail`
-   - `POST /api/students`, `PUT /api/students/{id}`, `DELETE /api/students/{id}`
-4. Đối chiếu kết quả giống hệt phiên bản Tuần 6 (chưa refactor) — xác nhận thay đổi kiến trúc không làm đổi hành vi.
+---
+
+## 3. Package cài thêm (Infrastructure)
+
+```bash
+dotnet add package BCrypt.Net-Next
+dotnet add package Microsoft.AspNetCore.Authentication.JwtBearer
+dotnet add package System.IdentityModel.Tokens.Jwt
+```
+
+---
+
+## 4. Cấu hình `appsettings.json`
+
+```json
+"JwtSettings": {
+  "SecretKey": "day-la-chuoi-bi-mat-toi-thieu-32-ky-tu-tro-len-de-an-toan",
+  "Issuer": "StudentManagementAPI",
+  "Audience": "StudentManagementClient",
+  "ExpiryMinutes": 15,
+  "RefreshTokenExpiryDays": 7
+}
+```
+
+> `SecretKey` ở môi trường thật (production) **không được commit vào Git** — nên chuyển sang User Secrets hoặc biến môi trường. Giữ trong `appsettings.json` chỉ chấp nhận được ở phạm vi bài tập/local dev.
+
+---
+
+## 5. Cài đặt & chạy lần đầu
+
+```bash
+# 1. Restore package
+dotnet restore
+
+# 2. Chạy migration (Package Manager Console, Default Project = StudentManagement.Infrastructure,
+#    Startup Project vẫn là StudentManagement.API)
+Update-Database
+
+# 3. Chạy API (F5 trong Visual Studio, hoặc)
+dotnet run --project StudentManagement.API
+```
+
+Migration đã có sẵn trong repo (không cần tạo lại): `InitialCreate`, `AddUserTable`, `AddRefreshTokenTable`, `AddSecondTestUser`.
+
+**Tài khoản test có sẵn (seed data):**
+
+| Username | Password | Role |
+|---|---|---|
+| `admin` | `123456` | Admin |
+| `user1` | `123456` | User |
+
+---
+
+## 6. Danh sách endpoint
+
+| Method | Endpoint | Yêu cầu | Ghi chú |
+|---|---|---|---|
+| POST | `/api/auth/login` | Không | Trả `AccessToken` (15p) + `RefreshToken` (7 ngày) |
+| POST | `/api/auth/refresh-token` | Không | Cấp cặp token mới, **rotation**: token cũ tự động bị revoke |
+| POST | `/api/auth/logout` | Không | Revoke refresh token theo yêu cầu |
+| GET | `/api/auth/me` | `[Authorize]` | Trả `UserId`/`Username`/`Role` đọc từ Claims trong token |
+| GET | `/api/students`, `/api/students/{id}`, `/api/students/with-class` | `[Authorize]` | Admin + User đều gọi được |
+| POST | `/api/students` | `[Authorize(Roles = "Admin")]` | Chỉ Admin |
+| PUT | `/api/students/{id}` | `[Authorize(Roles = "Admin")]` | Chỉ Admin |
+| DELETE | `/api/students/{id}` | `[Authorize(Policy = "CanManageStudents")]` | Chỉ Admin + có Claim `NameIdentifier` |
+
+---
+
+## 7. Luồng hoạt động
+
+### 7.1 Login
+
+```
+Client → POST /api/auth/login {username, password}
+  → LoginCommandHandler:
+      1. Tìm User theo username (404 ẩn dưới dạng 401 nếu sai)
+      2. Verify password bằng BCrypt
+      3. Sinh Access Token (JWT, Claims: UserID/Username/Role, sống 15p)
+      4. Sinh Refresh Token (chuỗi random 64 byte, không phải JWT)
+      5. Lưu Refresh Token vào DB (UserID, ExpiryDate = +7 ngày, IsRevoked = false)
+  → Trả AccessToken + RefreshToken cho Client
+```
+
+Sai username hoặc sai password đều trả **cùng 1 message chung** ("Sai username hoac password") để chống **User Enumeration**.
+
+### 7.2 Refresh Token (kèm Rotation)
+
+```
+Client → POST /api/auth/refresh-token {refreshToken}
+  → RefreshTokenCommandHandler:
+      1. Tìm RefreshToken trong DB theo chuỗi token
+      2. Kiểm tra: tồn tại? chưa bị revoke? còn hạn?
+         → sai bất kỳ điều nào → 401
+      3. Đánh dấu token cũ IsRevoked = true (ROTATION)
+      4. Sinh cặp Access Token + Refresh Token MỚI
+      5. SaveChangesAsync (1 lần, áp dụng cả Update token cũ + Insert token mới)
+  → Trả cặp token mới
+```
+
+Rotation giới hạn thời gian hacker có thể lợi dụng nếu trộm được refresh token: token chỉ dùng được **đúng 1 lần**, dùng xong là hết giá trị.
+
+### 7.3 Logout
+
+```
+Client → POST /api/auth/logout {refreshToken}
+  → RevokeTokenCommandHandler:
+      1. Tìm RefreshToken theo chuỗi token (không tồn tại → 401)
+      2. IsRevoked = true (không kiểm tra hạn — dù còn hạn hay hết hạn đều revoke được)
+      3. SaveChangesAsync
+```
+
+Không có `[Authorize]` — vì bản thân refresh token đã là bằng chứng đủ mạnh (64 byte ngẫu nhiên), và Access Token đã hết hạn có thể đúng lúc user muốn logout.
+
+> **Giới hạn cần biết:** Access Token cũ (JWT) vẫn dùng được tới khi tự hết hạn (tối đa 15 phút) dù đã Logout — vì JWT là stateless, server không revoke tức thời được. Logout chỉ chặn được việc **refresh** tiếp, không thu hồi Access Token đang lưu hành ngay lập tức.
+
+### 7.4 Authorization (Role / Policy)
+
+```
+Request → app.UseAuthentication()
+    → đọc header Authorization: Bearer <token>
+    → verify chữ ký + hạn → giải mã Claims → gán vào User.Identity
+    → LUÔN cho request đi tiếp (kể cả không có token — lúc đó IsAuthenticated = false)
+→ app.UseAuthorization()
+    → so [Authorize] trên Action với User.Identity đã có
+    → thiếu token / token sai / hết hạn → 401 Unauthorized
+    → có token hợp lệ nhưng sai Role/Policy → 403 Forbidden
+    → đủ điều kiện → cho vào Controller
+```
+
+Policy `CanManageStudents` (dùng cho `DELETE`) định nghĩa trong `Program.cs`:
+
+```csharp
+options.AddPolicy("CanManageStudents", policy =>
+    policy.RequireRole("Admin")
+          .RequireClaim(ClaimTypes.NameIdentifier));
+```
+
+---
+
+## 8. Hướng dẫn test bằng Swagger
+
+1. Mở Swagger UI, gọi `POST /api/auth/login` với `admin`/`123456` → copy giá trị `accessToken` trong response.
+2. Bấm nút **Authorize** (góc trên bên phải, icon ổ khóa) → nhập `Bearer <accessToken>` (giữ đúng chữ `Bearer` + khoảng trắng) → Authorize → Close.
+3. Gọi thử `GET /api/auth/me` → xác nhận đúng `UserId`/`Username`/`Role`.
+4. Gọi `POST /api/students` (Create) → phải thành công (200) vì đang là Admin.
+5. Bấm Authorize → Logout → login lại với `user1`/`123456` → Authorize lại bằng token mới.
+6. Gọi `POST /api/students` với token `user1` → phải nhận **403 Forbidden**.
+7. Test refresh: copy `refreshToken` từ 1 lần login bất kỳ → gọi `POST /api/auth/refresh-token` → nhận cặp token mới → gọi lại lần 2 với **token cũ** → phải nhận **401** (đã bị rotation revoke).
+8. Test logout: copy `refreshToken` thật (không dùng giá trị mẫu `"string"` Swagger tự điền) → gọi `POST /api/auth/logout` → 200 → gọi lại `refresh-token` với token vừa logout → phải nhận **401**.
+
+---
+
+## 9. Lưu ý bảo mật đã áp dụng
+
+- Password không bao giờ lưu dạng thô — chỉ lưu hash (BCrypt, tự động kèm Salt).
+- Access Token sống ngắn (15 phút) để giới hạn thiệt hại nếu bị lộ; Refresh Token sống dài hơn (7 ngày) nhưng **lưu ở DB** nên revoke được.
+- Refresh Token Rotation: mỗi lần dùng, token cũ bị vô hiệu hóa ngay, giảm cửa sổ thời gian có thể bị lợi dụng nếu bị đánh cắp.
+- Message lỗi đăng nhập dùng chung 1 câu cho cả 2 trường hợp sai username/sai password, tránh lộ thông tin "username này có tồn tại hay không" (chống User Enumeration).
+- Toàn bộ exception xác thực (`UnauthorizedException`) map thống nhất về HTTP 401 qua `GlobalExceptionMiddleware`.
+
