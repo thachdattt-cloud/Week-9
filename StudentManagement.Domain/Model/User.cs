@@ -13,6 +13,6 @@ namespace StudentManagement.Domain.Model
 
         public string PasswordHash { get; set; } = string.Empty;
 
-        public string Role { get; set; } = "User"; // "Admin" hoặc "User"
+        public string Role { get; set; } = "User";
     }
 }
